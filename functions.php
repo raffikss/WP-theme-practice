@@ -1,66 +1,78 @@
 <?php
-function wunder_hello_scripts() {
-    wp_enqueue_style( 'wunder-hello-style', get_stylesheet_uri() );
+function theme_enqueue_styles() {
+    wp_enqueue_style('custom-style', get_template_directory_uri() . '/src/output.css');
 }
-add_action( 'wp_enqueue_scripts', 'wunder_hello_scripts' );
+add_action('wp_enqueue_scripts', 'theme_enqueue_styles');
 
-function mytheme_register_menus() {
+function register_my_menus() {
     register_nav_menus(
         array(
-            'primary' => __( 'Primary Menu', 'mytheme' ),
+            'primary' => __( 'Primary Menu',  ),
         )
     );
 }
-add_action( 'after_setup_theme', 'mytheme_register_menus' );
-function hero_slider(){
-    get_template_part('hero_section');
+add_action( 'after_setup_theme', 'register_my_menus' );
+
+function register_my_sidebar() {
+    register_sidebar( array(
+        'name'        => __( 'Main Sidebar',  ),
+        'id'          => 'main-sidebar',
+        'description' => __( 'add widgets here to appear in the sidebar, max 3 widgets allowed!',  ),
+    ) );
 }
-function register_projects_cpt() {
+function register_projects_post_type() {
     $labels = array(
-        'name' => 'Projects',
-        'singular_name' => 'Project',
-        'menu_name' => 'Projects',
+        'name'               => _x('Projects', 'post type general name', 'hello-wunder'),
+        'singular_name'      => _x('Project', 'post type singular name', 'hello-wunder'),
+        'menu_name'          => _x('Projects', 'admin menu', 'hello-wunder'),
+        'add_new'            => _x('Add New', 'project', 'hello-wunder'),
+        'add_new_item'       => __('Add New Project', 'hello-wunder'),
+        'edit_item'          => __('Edit Project', 'hello-wunder'),
     );
-
     $args = array(
-        'labels' => $labels,
-        'public' => true,
-        'has_archive' => true,
-        'rewrite' => array('slug' => 'projects'),
-        'supports' => array('title', 'editor', 'thumbnail'),
-        'show_in_rest' => true,
+        'labels'             => $labels,
+        'public'             => true,
+        'has_archive'        => true,
+        'rewrite'            => array('slug' => 'projects'),
+        'supports'           => array('title', 'editor', 'thumbnail'),
+        'menu_icon'          => 'dashicons-portfolio',
     );
-
     register_post_type('projects', $args);
 }
-add_action('init', 'register_projects_cpt');
-
-add_action('init', 'register_projects_cpt');
+add_action('init', 'register_projects_post_type');
 
 function add_project_url_meta_box() {
     add_meta_box(
-        'project_url',
+        'project_url_meta_box',
         'Project URL',
-        'project_url_meta_box_html',
+        'display_project_url_meta_box',
         'projects',
-        'normal',
-        'high'
+        'side',
+        'default'
     );
 }
 add_action('add_meta_boxes', 'add_project_url_meta_box');
 
-function project_url_meta_box_html($post) {
+function display_project_url_meta_box($post) {
     $value = get_post_meta($post->ID, '_project_url', true);
-    echo '<input type="url" name="project_url" value="' . esc_attr($value) . '" style="width:100%" placeholder="https://example.com">';
+    ?>
+    <label for="project_url">Enter Project URL:</label>
+    <input type="url" id="project_url" name="project_url" value="<?php echo esc_url($value); ?>" style="width: 100%;">
+    <?php
 }
 
-function save_project_url_meta($post_id) {
-    if (isset($_POST['project_url'])) {
-        update_post_meta($post_id, '_project_url', esc_url($_POST['project_url']));
+function save_project_url_meta_box($post_id) {
+    if (array_key_exists('project_url', $_POST)) {
+        update_post_meta(
+            $post_id,
+            '_project_url',
+            esc_url($_POST['project_url'])
+        );
     }
 }
-add_action('save_post', 'save_project_url_meta');
+add_action('save_post', 'save_project_url_meta_box');
 
-if ( function_exists( 'wp_enqueue_block_template_skip_link' ) ) {
-    add_action( 'wp_enqueue_scripts', 'wp_enqueue_block_template_skip_link', 0 );
+function flush_rewrite_rules_on_init() {
+    flush_rewrite_rules();
 }
+add_action('init', 'flush_rewrite_rules_on_init');
